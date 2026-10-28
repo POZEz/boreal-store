@@ -1,0 +1,1493 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Boreal — Curadoria de Ofertas, Comparador & Cupons</title>
+  <meta name="description" content="Boreal: Curadoria profissional de ofertas e cupons verificados no Mercado Livre, Shopee, Amazon, KaBuM! e Pichau." />
+
+  <!-- Fontes Google: Plus Jakarta Sans, Inter e JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            display: ['Plus Jakarta Sans', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            boreal: {
+              yellow: '#FFE600',
+              yellowHover: '#F2D900',
+              emerald: '#10B981',
+              emeraldDark: '#059669',
+              surfaceLight: '#F4F5F8',
+              surfaceDark: '#090A0F',
+              cardDark: '#12141D',
+              borderDark: '#232736'
+            },
+            store: {
+              mercadolivre: '#F5BE00',
+              shopee: '#EE4D2D',
+              amazon: '#FF9900',
+              kabum: '#FF6500',
+              pichau: '#E31B23'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .font-price {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      letter-spacing: -0.03em;
+    }
+
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    /* Sistema de Profundidade Tátil Boreal (Recessed & Elevated) */
+    .recessed-track {
+      background-color: #E4E7EE;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.12), inset 0 1px 2px rgba(0, 0, 0, 0.08), 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+    .dark .recessed-track {
+      background-color: #06070B;
+      box-shadow: inset 0 3px 7px rgba(0, 0, 0, 0.85), inset 0 1px 3px rgba(0, 0, 0, 0.7), 0 1px 0 rgba(255, 255, 255, 0.05);
+    }
+
+    .recessed-panel {
+      background-color: #EAECEF;
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.08), inset 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    .dark .recessed-panel {
+      background-color: #0A0C12;
+      box-shadow: inset 0 3px 8px rgba(0, 0, 0, 0.7), inset 0 1px 2px rgba(0, 0, 0, 0.6);
+    }
+
+    /* Superfície elevada com relevo físico */
+    .elevated-pill {
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+    .dark .elevated-pill {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    .tactile-card {
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    }
+    .dark .tactile-card {
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    }
+
+    .tactile-btn:active {
+      transform: translateY(1px);
+    }
+
+    /* Efeito Aurora Boreal sutil no topo do modo escuro */
+    .boreal-glow {
+      background: radial-gradient(ellipse 80% 50% at 50% -20%, rgba(16, 185, 129, 0.10), rgba(255, 230, 0, 0.04), transparent);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade {
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-boreal-surfaceLight dark:bg-boreal-surfaceDark text-zinc-900 dark:text-zinc-100 transition-colors duration-200 selection:bg-boreal-yellow selection:text-zinc-950">
+
+  <!-- Glow Ambiental Superior -->
+  <div class="fixed inset-x-0 top-0 h-72 pointer-events-none boreal-glow z-0"></div>
+
+  <!-- ===================================================================== -->
+  <!-- HEADER PRINCIPAL BOREAL                                               -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-white/90 dark:bg-[#0D0F17]/90 backdrop-blur-xl border-b border-zinc-200/80 dark:border-boreal-borderDark transition-colors">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3">
+      <div class="flex flex-wrap lg:flex-nowrap items-center justify-between gap-3.5">
+
+        <!-- 1. Logo Boreal (Substitua o src da imagem abaixo quando tiver seu ícone definitivo) -->
+        <a href="#/" class="flex items-center gap-2.5 group focus:outline-none shrink-0 order-1">
+          <!-- Espaço preparado para o seu ícone personalizado -->
+          <div class="w-9 h-9 rounded-xl recessed-track p-1 flex items-center justify-center overflow-hidden border border-zinc-300/60 dark:border-zinc-800">
+            <!-- Para usar sua imagem de logo, basta trocar o elemento abaixo por: <img src="sua-logo.png" alt="Boreal" class="w-full h-full object-contain" /> -->
+            <div class="w-full h-full rounded-lg bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center font-display font-extrabold text-sm text-white dark:text-zinc-950 tracking-tighter">
+              B
+            </div>
+          </div>
+          <span class="font-display font-extrabold text-xl tracking-tight text-zinc-950 dark:text-white">BOREAL</span>
+        </a>
+
+        <!-- 2. Barra de Busca com Profundidade Tátil -->
+        <div class="w-full lg:w-auto lg:flex-1 max-w-md order-3 lg:order-2">
+          <div class="relative recessed-track rounded-xl p-1 border border-zinc-300/60 dark:border-zinc-800/90">
+            <input
+              type="text"
+              id="search-input"
+              placeholder="Buscar produto..."
+              class="w-full pl-9 pr-16 py-1.5 bg-transparent text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-500 dark:placeholder-zinc-500 rounded-lg focus:outline-none transition-all"
+            />
+            <svg class="w-4 h-4 text-zinc-400 dark:text-zinc-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <button
+              id="clear-search-btn"
+              class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-zinc-600 dark:text-zinc-300 elevated-pill bg-white dark:bg-zinc-800 px-2 py-0.5 rounded-md"
+            >
+              Limpar
+            </button>
+          </div>
+        </div>
+
+        <!-- 3. Seletor com Profundidade Tátil (Vitrine de Ofertas vs Cupons Ativos) -->
+        <div class="w-full sm:w-auto order-4 lg:order-3 flex items-center justify-center">
+          <div
+            role="tablist"
+            aria-label="Alternar entre Vitrine de Ofertas e Cupons Ativos"
+            class="recessed-track w-full sm:w-auto p-1.5 rounded-2xl border border-zinc-300/70 dark:border-zinc-800/90 grid grid-cols-2 sm:flex items-center gap-1.5"
+          >
+            <!-- Aba 1: Vitrine de Ofertas -->
+            <a
+              href="#/"
+              id="switch-tab-vitrine"
+              role="tab"
+              class="elevated-pill px-4 py-2 rounded-xl text-xs font-display font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-[#191C28] text-zinc-950 dark:text-white border border-zinc-200/90 dark:border-zinc-700/80"
+            >
+              <span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]"></span>
+              <span>Vitrine de Ofertas</span>
+              <span id="nav-products-count" class="text-[11px] font-mono px-1.5 py-0.2 rounded-md recessed-panel text-zinc-700 dark:text-zinc-300">0</span>
+            </a>
+
+            <!-- Aba 2: Cupons Ativos -->
+            <a
+              href="#/cupons"
+              id="switch-tab-cupons"
+              role="tab"
+              class="px-4 py-2 rounded-xl text-xs font-display font-bold transition-all duration-200 flex items-center justify-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-transparent"
+            >
+              <svg class="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+              </svg>
+              <span>Cupons Ativos</span>
+              <span id="nav-coupons-count" class="text-[11px] font-mono font-extrabold px-1.5 py-0.2 rounded-md bg-boreal-yellow text-zinc-950 shadow-sm">0</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- 4. Alternador de Modo Claro / Escuro (Extremo Direito da Barra Superior) -->
+        <div class="order-2 lg:order-4 ml-auto lg:ml-0 shrink-0">
+          <div class="recessed-track p-1 rounded-xl border border-zinc-300/70 dark:border-zinc-800/90">
+            <button
+              id="theme-toggle-btn"
+              onclick="toggleTheme()"
+              class="elevated-pill tactile-btn p-2 rounded-lg bg-white dark:bg-[#191C28] text-zinc-700 dark:text-zinc-200 border border-zinc-200/80 dark:border-zinc-700/80 flex items-center justify-center transition-all"
+              title="Alternar tema Claro/Escuro"
+              aria-label="Alternar tema"
+            >
+              <!-- Sol (Modo Escuro) -->
+              <svg id="icon-sun" class="w-4 h-4 hidden dark:block text-boreal-yellow" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+              <!-- Lua (Modo Claro) -->
+              <svg id="icon-moon" class="w-4 h-4 block dark:hidden text-zinc-800" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- CONTEÚDO PRINCIPAL (VIEWS DINÂMICAS)                                  -->
+  <!-- ===================================================================== -->
+  <main class="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6">
+
+    <!-- =================================================================== -->
+    <!-- VIEW 1: VITRINE DE OFERTAS                                          -->
+    <!-- =================================================================== -->
+    <section id="view-home" class="space-y-5 animate-fade">
+
+      <!-- ================================================================= -->
+      <!-- BANNER DE IMAGEM + FAIXA DE CUPONS COM MARGEM CONTROLADA          -->
+      <!-- ================================================================= -->
+      <div class="tactile-card bg-white dark:bg-boreal-cardDark rounded-2xl p-2.5 sm:p-3 border border-zinc-200/90 dark:border-boreal-borderDark space-y-2.5 overflow-hidden">
+
+        <!-- Slot para Banner em Imagem (Basta substituir o atributo src pela arte do seu banner) -->
+        <div class="recessed-track rounded-xl overflow-hidden relative aspect-[21/6] sm:aspect-[24/5] min-h-[110px] flex items-center justify-center border border-zinc-300/60 dark:border-zinc-800/80">
+          <!-- Caso queira colocar uma imagem pronta, troque o src abaixo pelo link ou caminho da sua imagem (ex: assets/banner.webp) -->
+          <img
+            id="hero-banner-img"
+            src=""
+            alt="Banner Boreal"
+            class="hidden w-full h-full object-cover"
+            onload="this.classList.remove('hidden'); document.getElementById('banner-placeholder').classList.add('hidden');"
+            onerror="this.classList.add('hidden');"
+          />
+          <!-- Placeholder visual limpo enquanto você não define sua imagem de banner -->
+          <div id="banner-placeholder" class="w-full h-full bg-gradient-to-r from-zinc-900 via-[#121624] to-zinc-900 flex items-center justify-between px-6 sm:px-10 py-4 relative overflow-hidden">
+            <div class="absolute -right-10 -top-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none"></div>
+            <div class="absolute left-1/3 -bottom-20 w-64 h-64 rounded-full bg-boreal-yellow/10 blur-2xl pointer-events-none"></div>
+            <div class="relative z-10">
+              <span class="text-[10px] font-mono uppercase tracking-widest text-emerald-400 block mb-1">Espaço para Banner (1200x250)</span>
+              <h2 class="font-display font-extrabold text-base sm:text-xl text-white tracking-tight">Ofertas selecionadas e cupons verificados</h2>
+            </div>
+            <div class="hidden sm:flex items-center gap-2 relative z-10">
+              <span class="text-xs font-mono text-zinc-400 bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg">BOREAL</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Barra de Cupons em Destaque (Sempre contida dentro da margem do card) -->
+        <div class="recessed-panel rounded-xl p-2 border border-zinc-200/70 dark:border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div id="mini-coupons-strip" class="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0 flex-1">
+            <!-- Preenchido via JS com dados do Supabase -->
+          </div>
+
+          <a
+            href="#/cupons"
+            class="elevated-pill tactile-btn shrink-0 text-xs font-display font-bold text-zinc-900 dark:text-white bg-white dark:bg-[#191C28] hover:bg-zinc-50 dark:hover:bg-zinc-800 px-3.5 py-2 rounded-lg border border-zinc-200/90 dark:border-zinc-700/80 flex items-center justify-center gap-1.5 transition-all"
+          >
+            <span>Todos os cupons</span>
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- BARRA COMPACTA E EXPANSÍVEL DE FILTROS (OCULTO POR PADRÃO)        -->
+      <!-- ================================================================= -->
+      <div class="space-y-2.5">
+        <!-- Linha de Controle Compacta -->
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div class="flex items-center gap-2 flex-wrap">
+            <!-- Botão Tátil para Expandir/Recolher os Filtros -->
+            <div class="recessed-track p-1 rounded-xl border border-zinc-300/70 dark:border-zinc-800/90 inline-flex items-center">
+              <button
+                id="toggle-filters-btn"
+                onclick="toggleFiltersDrawer()"
+                aria-expanded="false"
+                class="elevated-pill tactile-btn px-3.5 py-1.5 rounded-lg bg-white dark:bg-[#191C28] text-zinc-900 dark:text-zinc-100 border border-zinc-200/90 dark:border-zinc-700/80 text-xs font-display font-bold flex items-center gap-2 transition-all"
+              >
+                <svg class="w-3.5 h-3.5 text-zinc-500 dark:text-zinc-400" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                </svg>
+                <span>Filtros</span>
+                <span id="active-filters-badge" class="hidden text-[10px] font-mono font-extrabold px-1.5 py-0.2 rounded bg-boreal-yellow text-zinc-950">0</span>
+                <svg id="filter-chevron" class="w-3.5 h-3.5 text-zinc-400 transition-transform duration-200" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Botão Limpar Filtros (aparece apenas quando há algum filtro ativo) -->
+            <button
+              id="reset-filters-btn"
+              onclick="resetAllFilters()"
+              class="hidden text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white px-2.5 py-1.5 rounded-lg recessed-panel"
+            >
+              Limpar filtros ×
+            </button>
+          </div>
+
+          <!-- Contador Discreto + Ordenação Rápida -->
+          <div class="flex items-center gap-3 ml-auto">
+            <span id="results-counter" class="text-xs text-zinc-500 dark:text-zinc-400 font-medium hidden sm:inline"></span>
+
+            <div class="recessed-track p-1 rounded-xl border border-zinc-300/70 dark:border-zinc-800/90 flex items-center">
+              <select
+                id="sort-select"
+                aria-label="Ordenar produtos"
+                class="elevated-pill bg-white dark:bg-[#191C28] border border-zinc-200/80 dark:border-zinc-700/80 text-zinc-800 dark:text-zinc-200 text-xs font-semibold rounded-lg px-2.5 py-1.5 focus:outline-none cursor-pointer"
+              >
+                <option value="featured">Destaques</option>
+                <option value="discount">Maior Desconto</option>
+                <option value="price_asc">Menor Preço</option>
+                <option value="price_desc">Maior Preço</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Gaveta de Filtros (Oculta por padrão, expande com efeito de profundidade) -->
+        <div
+          id="filters-drawer"
+          class="hidden recessed-panel rounded-2xl p-4 border border-zinc-300/70 dark:border-zinc-800/90 space-y-4 animate-fade"
+        >
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+
+            <!-- Lojas -->
+            <div class="md:col-span-6 space-y-1.5">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block">Filtrar por Loja</span>
+              <div class="flex flex-wrap items-center gap-1.5" id="store-filters-container">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+
+            <!-- Categorias -->
+            <div class="md:col-span-6 space-y-1.5">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block">Categorias</span>
+              <div class="flex flex-wrap items-center gap-1.5" id="category-filters">
+                <!-- Preenchido via JS -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Linha Inferior da Gaveta: Faixa de Preço e Condições -->
+          <div class="pt-3 border-t border-zinc-300/60 dark:border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                id="filter-only-coupon-btn"
+                onclick="toggleOnlyCouponFilter()"
+                class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-800"
+              >
+                <span>Com Cupom</span>
+              </button>
+              <button
+                id="filter-super-deal-btn"
+                onclick="toggleSuperDealFilter()"
+                class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-800"
+              >
+                <span>Desconto +20%</span>
+              </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-medium text-zinc-500 dark:text-zinc-400">Faixa de preço:</span>
+              <select
+                id="price-range-select"
+                class="bg-white dark:bg-[#151824] border border-zinc-300/80 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-xs font-semibold rounded-xl px-3 py-1.5 focus:outline-none"
+              >
+                <option value="all">Qualquer valor</option>
+                <option value="0-300">Até R$ 300</option>
+                <option value="300-1200">R$ 300 a R$ 1.200</option>
+                <option value="1200-2500">R$ 1.200 a R$ 2.500</option>
+                <option value="2500-999999">Acima de R$ 2.500</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRID PRINCIPAL DE PRODUTOS -->
+      <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-5">
+        <!-- Cards injetados exclusivamente a partir do Supabase -->
+      </div>
+
+      <!-- Estado Vazio (Sem produtos no Supabase ou sem resultados no filtro) -->
+      <div id="empty-state" class="hidden recessed-panel rounded-2xl border border-zinc-300/70 dark:border-zinc-800/90 p-10 sm:p-12 text-center max-w-lg mx-auto my-6">
+        <div class="w-11 h-11 rounded-xl elevated-pill bg-white dark:bg-[#191C28] flex items-center justify-center mx-auto mb-3.5 text-zinc-400 border border-zinc-200/80 dark:border-zinc-700">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+          </svg>
+        </div>
+        <h3 id="empty-state-title" class="font-display font-bold text-base text-zinc-900 dark:text-white">
+          Nenhum produto cadastrado ainda
+        </h3>
+        <p id="empty-state-desc" class="text-xs text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+          O catálogo está conectado ao Supabase, mas ainda não há produtos publicados na base de dados.
+        </p>
+        <button
+          id="empty-state-reset-btn"
+          onclick="resetAllFilters()"
+          class="hidden mt-5 px-4 py-2 rounded-xl elevated-pill bg-boreal-yellow text-zinc-950 text-xs font-bold hover:bg-boreal-yellowHover transition-colors"
+        >
+          Limpar filtros
+        </button>
+      </div>
+
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 2: PÁGINA DEDICADA DO PRODUTO (#/produto/slug)                 -->
+    <!-- =================================================================== -->
+    <section id="view-product" class="hidden animate-fade">
+      <!-- Renderizado dinamicamente via JS -->
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- VIEW 3: CENTRAL DE CUPONS ATIVOS (#/cupons)                         -->
+    <!-- =================================================================== -->
+    <section id="view-coupons" class="hidden space-y-5 animate-fade">
+      <div class="tactile-card bg-white dark:bg-boreal-cardDark rounded-2xl p-5 border border-zinc-200/80 dark:border-boreal-borderDark flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div>
+          <h1 class="font-display font-extrabold text-xl text-zinc-900 dark:text-white">Cupons Ativos</h1>
+          <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">
+            Clique para copiar o código e abrir a loja parceira.
+          </p>
+        </div>
+
+        <!-- Filtros de Loja para Cupons com Profundidade -->
+        <div class="recessed-track p-1.5 rounded-xl border border-zinc-300/70 dark:border-zinc-800/90 flex flex-wrap gap-1.5" id="coupon-store-filters">
+          <!-- Renderizado via JS -->
+        </div>
+      </div>
+
+      <div id="coupons-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <!-- Cards de cupons injetados pelo JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL SIMPLES: TERMOS E CONDIÇÕES                                     -->
+  <!-- ===================================================================== -->
+  <div id="terms-modal" class="fixed inset-0 z-50 hidden bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="tactile-card bg-white dark:bg-[#12141D] border border-zinc-200 dark:border-boreal-borderDark rounded-2xl max-w-lg w-full overflow-hidden animate-fade">
+      <div class="px-5 py-4 border-b border-zinc-200 dark:border-boreal-borderDark flex items-center justify-between">
+        <h2 class="font-display font-bold text-sm text-zinc-900 dark:text-white">Termos e Condições de Uso</h2>
+        <button onclick="closeTermsModal()" class="text-zinc-400 hover:text-zinc-700 dark:hover:text-white text-sm px-2 py-1 rounded-lg">✕</button>
+      </div>
+      <div class="p-5 text-xs text-zinc-600 dark:text-zinc-300 space-y-3 leading-relaxed">
+        <p><strong>1. Natureza do Serviço:</strong> O Boreal atua exclusivamente como uma plataforma de organização e divulgação de ofertas e cupons de desconto disponibilizados por lojas parceiras.</p>
+        <p><strong>2. Links de Afiliados:</strong> Ao clicar nos links de produtos ou cupons, você é direcionado para a plataforma oficial do vendedor. O Boreal pode receber comissões de afiliado sem qualquer custo adicional para o comprador.</p>
+        <p><strong>3. Variação de Preços e Estoques:</strong> Os valores, cupons e estoques exibidos são verificados periodicamente, mas estão sujeitos a alterações ou encerramento a qualquer momento pelas plataformas parceiras sem aviso prévio.</p>
+        <p><strong>4. Responsabilidade de Compra:</strong> Pagamentos, prazos de entrega, garantias e suporte pós-venda são de inteira responsabilidade da loja onde a compra for concluída.</p>
+      </div>
+      <div class="px-5 py-3 bg-zinc-50 dark:bg-[#0A0C12] border-t border-zinc-200 dark:border-boreal-borderDark flex justify-end">
+        <button onclick="closeTermsModal()" class="elevated-pill px-4 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold">
+          Entendi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST DE NOTIFICAÇÃO -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300">
+    <div class="bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 px-4 py-3 rounded-2xl shadow-2xl border border-zinc-800 dark:border-zinc-200 flex items-center gap-3 text-xs sm:text-sm font-medium">
+      <span class="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 font-bold text-xs">✓</span>
+      <span id="toast-message">Operação concluída!</span>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- RODAPÉ COMPACTO BOREAL                                                -->
+  <!-- ===================================================================== -->
+  <footer class="bg-white dark:bg-[#0D0F17] border-t border-zinc-200/80 dark:border-boreal-borderDark mt-16 py-6 px-4 text-xs text-zinc-500 dark:text-zinc-400">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+        <span class="font-display font-extrabold text-zinc-900 dark:text-white">© 2026 Boreal.</span>
+        <span>Todos os direitos reservados.</span>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 text-zinc-400 dark:text-zinc-500">
+        <span>Preços e estoques sujeitos a alteração nas plataformas parceiras.</span>
+        <span>•</span>
+        <button onclick="openTermsModal()" class="text-zinc-600 dark:text-zinc-300 hover:underline font-medium">
+          Termos e Condições
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- LÓGICA COMPLETA DA APLICAÇÃO BOREAL (100% SUPABASE)                   -->
+  <!-- ===================================================================== -->
+  <script>
+    /**
+     * 1. CONEXÃO SUPABASE
+     */
+    const SUPABASE_URL = "https://qqbapnzbegeurnbsopxi.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_KTjvfy_DfkIvRad7XlUrQQ_ap3O817g";
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    /**
+     * 2. METADADOS E IDENTIDADE CROMÁTICA DOS MARKETPLACES
+     */
+    const STORE_META = {
+      mercadolivre: {
+        key: "mercadolivre",
+        name: "Mercado Livre",
+        dotColor: "#F5BE00",
+        badgeClass: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/25",
+        ctaClass: "bg-[#FFE600] hover:bg-[#F2D900] text-zinc-950 font-extrabold",
+        outlineClass: "border-amber-400/50 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200"
+      },
+      shopee: {
+        key: "shopee",
+        name: "Shopee",
+        dotColor: "#EE4D2D",
+        badgeClass: "bg-orange-500/10 text-orange-700 dark:text-orange-300 border-orange-500/25",
+        ctaClass: "bg-[#EE4D2D] hover:bg-[#D73211] text-white font-bold",
+        outlineClass: "border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-orange-800 dark:text-orange-200"
+      },
+      amazon: {
+        key: "amazon",
+        name: "Amazon",
+        dotColor: "#FF9900",
+        badgeClass: "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/25",
+        ctaClass: "bg-[#FF9900] hover:bg-[#E68A00] text-zinc-950 font-extrabold",
+        outlineClass: "border-amber-500/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200"
+      },
+      kabum: {
+        key: "kabum",
+        name: "KaBuM!",
+        dotColor: "#FF6500",
+        badgeClass: "bg-orange-500/10 text-orange-800 dark:text-orange-300 border-orange-500/25",
+        ctaClass: "bg-[#FF6500] hover:bg-[#E05800] text-white font-bold",
+        outlineClass: "border-orange-500/40 bg-orange-500/10 hover:bg-orange-500/20 text-orange-900 dark:text-orange-200"
+      },
+      pichau: {
+        key: "pichau",
+        name: "Pichau",
+        dotColor: "#E31B23",
+        badgeClass: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/25",
+        ctaClass: "bg-[#E31B23] hover:bg-[#C8141B] text-white font-bold",
+        outlineClass: "border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-900 dark:text-red-200"
+      }
+    };
+
+    function getStoreMeta(storeKey) {
+      const k = (storeKey || "").toLowerCase().replace(/\s+/g, "");
+      return STORE_META[k] || STORE_META.mercadolivre;
+    }
+
+    /**
+     * 3. ESTADO CENTRAL DO BOREAL (SEM DADOS FICTÍCIOS)
+     */
+    const state = {
+      isLoading: true,
+      products: [],
+      categories: [],
+      coupons: [],
+      filtersOpen: false,
+      activeStore: "all",
+      activeCategory: "all",
+      activeCouponStore: "all",
+      priceRange: "all",
+      onlyWithCoupon: false,
+      onlySuperDeal: false,
+      searchQuery: "",
+      sortBy: "featured"
+    };
+
+    const brl = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+
+    /**
+     * 4. ENRIQUECIMENTO DE PRODUTO (ORDENAÇÃO DE OFERTAS E CÁLCULO DE DESCONTO)
+     */
+    function enrichProduct(prod) {
+      const validOffers = (prod.offers || []).filter(o => o.in_stock !== false && Number(o.current_price) > 0);
+      validOffers.sort((a, b) => Number(a.current_price) - Number(b.current_price));
+
+      const bestOffer = validOffers[0] || {
+        store: "mercadolivre",
+        current_price: 0,
+        original_price: 0,
+        affiliate_link: "#",
+        coupon_code: null
+      };
+
+      const current = Number(bestOffer.current_price);
+      const original = Number(bestOffer.original_price || 0);
+      const discountPct = original > current ? Math.round(((original - current) / original) * 100) : 0;
+      const hasAnyCoupon = validOffers.some(o => Boolean(o.coupon_code && o.coupon_code.trim() !== ""));
+
+      return {
+        ...prod,
+        sortedOffers: validOffers,
+        bestOffer,
+        discountPct,
+        hasAnyCoupon
+      };
+    }
+
+    /**
+     * 5. CARREGAMENTO DIRETO DO SUPABASE (SEM FALLBACK DE PRODUTOS FALSOS)
+     */
+    async function loadDatabase() {
+      state.isLoading = true;
+      renderProductsGrid();
+
+      try {
+        const [catRes, prodRes, coupRes] = await Promise.all([
+          supabaseClient.from("categories").select("*").order("name"),
+          supabaseClient.from("products").select("*, categories(slug, name), offers(*)").order("created_at", { ascending: false }),
+          supabaseClient.from("coupons").select("*").eq("is_active", true).order("created_at", { ascending: false })
+        ]);
+
+        state.categories = (!catRes.error && Array.isArray(catRes.data)) ? catRes.data : [];
+        state.products = (!prodRes.error && Array.isArray(prodRes.data)) ? prodRes.data.map(enrichProduct) : [];
+        state.coupons = (!coupRes.error && Array.isArray(coupRes.data)) ? coupRes.data : [];
+      } catch (err) {
+        state.categories = [];
+        state.products = [];
+        state.coupons = [];
+      } finally {
+        state.isLoading = false;
+        refreshAllUI();
+      }
+    }
+
+    function refreshAllUI() {
+      updateHeaderCounters();
+      renderMiniCoupons();
+      renderStoreFilters();
+      renderCategoryFilters();
+      renderCouponStoreFilters();
+      handleRoute();
+    }
+
+    function updateHeaderCounters() {
+      document.getElementById("nav-products-count").textContent = state.products.length;
+      document.getElementById("nav-coupons-count").textContent = state.coupons.length;
+    }
+
+    /**
+     * 6. TEMA ESCURO / CLARO E GAVETA DE FILTROS
+     */
+    function toggleTheme() {
+      const htmlEl = document.documentElement;
+      htmlEl.classList.toggle("dark");
+    }
+
+    function toggleFiltersDrawer() {
+      state.filtersOpen = !state.filtersOpen;
+      const drawer = document.getElementById("filters-drawer");
+      const chevron = document.getElementById("filter-chevron");
+      const btn = document.getElementById("toggle-filters-btn");
+
+      drawer.classList.toggle("hidden", !state.filtersOpen);
+      btn.setAttribute("aria-expanded", String(state.filtersOpen));
+      chevron.style.transform = state.filtersOpen ? "rotate(180deg)" : "rotate(0deg)";
+    }
+
+    function openTermsModal() {
+      document.getElementById("terms-modal").classList.remove("hidden");
+    }
+
+    function closeTermsModal() {
+      document.getElementById("terms-modal").classList.add("hidden");
+    }
+
+    /**
+     * 7. CLIPBOARD COMPARTILHÁVEL
+     */
+    function copyTextToClipboard(text) {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand("copy");
+      } catch (e) {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text);
+        }
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function copyToClipboard(code) {
+      copyTextToClipboard(code);
+      showToast(`Cupom ${code} copiado!`);
+    }
+
+    function copyCouponAndOpen(code, link) {
+      copyTextToClipboard(code);
+      showToast(`Cupom ${code} copiado! Abrindo loja...`);
+      setTimeout(() => {
+        window.open(link, "_blank", "noopener,noreferrer");
+      }, 600);
+    }
+
+    /**
+     * 8. RENDERIZAÇÃO DOS FILTROS E FAIXA DE CUPONS
+     */
+    function renderStoreFilters() {
+      const container = document.getElementById("store-filters-container");
+      const storesOrder = ["all", "mercadolivre", "shopee", "amazon", "kabum", "pichau"];
+
+      container.innerHTML = storesOrder.map(storeKey => {
+        const isActive = state.activeStore === storeKey;
+
+        if (storeKey === "all") {
+          return `
+            <button
+              onclick="setStoreFilter('all')"
+              class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                isActive
+                  ? "elevated-pill bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 font-bold"
+                  : "bg-white/80 dark:bg-[#151824] text-zinc-600 dark:text-zinc-400 border border-zinc-300/70 dark:border-zinc-800"
+              }"
+            >
+              Todas (${state.products.length})
+            </button>
+          `;
+        }
+
+        const meta = getStoreMeta(storeKey);
+        const count = state.products.filter(p => p.sortedOffers.some(o => o.store.toLowerCase() === storeKey)).length;
+
+        return `
+          <button
+            onclick="setStoreFilter('${storeKey}')"
+            class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 border ${
+              isActive
+                ? "elevated-pill bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 border-zinc-900 dark:border-white font-bold"
+                : "bg-white/80 dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/70 dark:border-zinc-800"
+            }"
+          >
+            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${meta.dotColor}"></span>
+            <span>${meta.name}</span>
+            <span class="text-[10px] font-mono opacity-75">(${count})</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    function setStoreFilter(storeKey) {
+      state.activeStore = storeKey;
+      renderStoreFilters();
+      renderProductsGrid();
+    }
+
+    function toggleOnlyCouponFilter() {
+      state.onlyWithCoupon = !state.onlyWithCoupon;
+      const btn = document.getElementById("filter-only-coupon-btn");
+      if (state.onlyWithCoupon) {
+        btn.className = "elevated-pill tactile-btn px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 bg-boreal-yellow text-zinc-950 border-amber-400";
+      } else {
+        btn.className = "tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-800";
+      }
+      renderProductsGrid();
+    }
+
+    function toggleSuperDealFilter() {
+      state.onlySuperDeal = !state.onlySuperDeal;
+      const btn = document.getElementById("filter-super-deal-btn");
+      if (state.onlySuperDeal) {
+        btn.className = "elevated-pill tactile-btn px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 bg-emerald-500 text-zinc-950 border-emerald-400";
+      } else {
+        btn.className = "tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-800";
+      }
+      renderProductsGrid();
+    }
+
+    function renderCategoryFilters() {
+      const container = document.getElementById("category-filters");
+      const allActive = state.activeCategory === "all";
+
+      let html = `
+        <button
+          onclick="setCategoryFilter('all')"
+          class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            allActive
+              ? "elevated-pill bg-boreal-yellow text-zinc-950 font-bold"
+              : "bg-white/80 dark:bg-[#151824] text-zinc-600 dark:text-zinc-400 border border-zinc-300/70 dark:border-zinc-800"
+          }"
+        >
+          Todas
+        </button>
+      `;
+
+      html += state.categories.map(cat => {
+        const active = state.activeCategory === cat.slug;
+        return `
+          <button
+            onclick="setCategoryFilter('${cat.slug}')"
+            class="tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              active
+                ? "elevated-pill bg-boreal-yellow text-zinc-950 font-bold"
+                : "bg-white/80 dark:bg-[#151824] text-zinc-600 dark:text-zinc-400 border border-zinc-300/70 dark:border-zinc-800"
+            }"
+          >
+            ${cat.name}
+          </button>
+        `;
+      }).join("");
+
+      container.innerHTML = html;
+    }
+
+    function setCategoryFilter(slug) {
+      state.activeCategory = slug;
+      renderCategoryFilters();
+      renderProductsGrid();
+    }
+
+    function renderMiniCoupons() {
+      const strip = document.getElementById("mini-coupons-strip");
+      if (!state.coupons || state.coupons.length === 0) {
+        strip.innerHTML = `
+          <span class="text-xs text-zinc-500 dark:text-zinc-400 px-2 py-1">
+            Nenhum cupom ativo cadastrado no momento.
+          </span>
+        `;
+        return;
+      }
+
+      const topCoupons = state.coupons.slice(0, 3);
+      strip.innerHTML = topCoupons.map(c => {
+        const meta = getStoreMeta(c.store);
+        return `
+          <button
+            onclick="copyCouponAndOpen('${c.code}', '${c.affiliate_link}')"
+            class="elevated-pill tactile-btn shrink-0 flex items-center gap-2 bg-white dark:bg-[#161924] hover:border-boreal-yellow border border-zinc-200/90 dark:border-zinc-700/80 px-3 py-1.5 rounded-lg transition-all text-left"
+            title="Copiar cupom e abrir loja"
+          >
+            <span class="w-2 h-2 rounded-full shrink-0" style="background-color: ${meta.dotColor}"></span>
+            <span class="font-mono font-bold text-xs text-zinc-900 dark:text-white">${c.code}</span>
+            <span class="text-[11px] text-zinc-500 dark:text-zinc-400 truncate max-w-[150px]">${c.discount_desc}</span>
+          </button>
+        `;
+      }).join("");
+    }
+
+    /**
+     * 9. MOTOR DE FILTRAGEM E GRID DE PRODUTOS
+     */
+    function getFilteredProducts() {
+      return state.products
+        .filter(p => {
+          if (state.activeStore !== "all") {
+            const hasStore = p.sortedOffers.some(o => o.store.toLowerCase() === state.activeStore);
+            if (!hasStore) return false;
+          }
+          if (state.activeCategory !== "all") {
+            const catSlug = p.categories?.slug || "";
+            if (catSlug !== state.activeCategory) return false;
+          }
+          if (state.onlyWithCoupon && !p.hasAnyCoupon) {
+            return false;
+          }
+          if (state.onlySuperDeal && p.discountPct < 20) {
+            return false;
+          }
+          if (state.priceRange !== "all") {
+            const [minStr, maxStr] = state.priceRange.split("-");
+            const min = Number(minStr);
+            const max = Number(maxStr);
+            const priceToEvaluate = state.activeStore !== "all"
+              ? Number((p.sortedOffers.find(o => o.store.toLowerCase() === state.activeStore) || p.bestOffer).current_price)
+              : Number(p.bestOffer.current_price);
+            if (priceToEvaluate < min || priceToEvaluate > max) return false;
+          }
+          if (state.searchQuery.trim() !== "") {
+            const q = state.searchQuery.toLowerCase();
+            const matchTitle = p.title.toLowerCase().includes(q);
+            const matchCat = (p.categories?.name || "").toLowerCase().includes(q);
+            if (!matchTitle && !matchCat) return false;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          if (state.sortBy === "discount") return b.discountPct - a.discountPct;
+          if (state.sortBy === "price_asc") return a.bestOffer.current_price - b.bestOffer.current_price;
+          if (state.sortBy === "price_desc") return b.bestOffer.current_price - a.bestOffer.current_price;
+          return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
+        });
+    }
+
+    function getActiveFilterCount() {
+      let count = 0;
+      if (state.activeStore !== "all") count++;
+      if (state.activeCategory !== "all") count++;
+      if (state.priceRange !== "all") count++;
+      if (state.onlyWithCoupon) count++;
+      if (state.onlySuperDeal) count++;
+      if (state.searchQuery.trim() !== "") count++;
+      return count;
+    }
+
+    function renderProductsGrid() {
+      const grid = document.getElementById("products-grid");
+      const empty = document.getElementById("empty-state");
+      const emptyTitle = document.getElementById("empty-state-title");
+      const emptyDesc = document.getElementById("empty-state-desc");
+      const emptyResetBtn = document.getElementById("empty-state-reset-btn");
+      const counter = document.getElementById("results-counter");
+      const resetBtn = document.getElementById("reset-filters-btn");
+      const badge = document.getElementById("active-filters-badge");
+
+      if (state.isLoading) {
+        grid.innerHTML = "";
+        empty.classList.remove("hidden");
+        emptyTitle.textContent = "Carregando catálogo...";
+        emptyDesc.textContent = "Buscando produtos cadastrados no banco de dados.";
+        emptyResetBtn.classList.add("hidden");
+        counter.textContent = "";
+        return;
+      }
+
+      const activeFilterCount = getActiveFilterCount();
+      resetBtn.classList.toggle("hidden", activeFilterCount === 0);
+      badge.classList.toggle("hidden", activeFilterCount === 0);
+      badge.textContent = activeFilterCount;
+
+      // Caso o banco do Supabase ainda não tenha nenhum produto cadastrado
+      if (state.products.length === 0) {
+        grid.innerHTML = "";
+        empty.classList.remove("hidden");
+        emptyTitle.textContent = "Nenhum produto cadastrado ainda";
+        emptyDesc.textContent = "Ainda não há produtos registrados no banco de dados.";
+        emptyResetBtn.classList.add("hidden");
+        counter.textContent = "0 produtos";
+        return;
+      }
+
+      const filtered = getFilteredProducts();
+      counter.textContent = `${filtered.length} ${filtered.length === 1 ? "produto" : "produtos"}`;
+
+      if (filtered.length === 0) {
+        grid.innerHTML = "";
+        empty.classList.remove("hidden");
+        emptyTitle.textContent = "Nenhum produto encontrado";
+        emptyDesc.textContent = "Não encontramos produtos para a combinação de filtros selecionada.";
+        emptyResetBtn.classList.remove("hidden");
+        return;
+      }
+
+      empty.classList.add("hidden");
+      grid.innerHTML = filtered.map(prod => createProductCardHTML(prod)).join("");
+    }
+
+    function createProductCardHTML(prod) {
+      const displayOffer = state.activeStore !== "all"
+        ? (prod.sortedOffers.find(o => o.store.toLowerCase() === state.activeStore) || prod.bestOffer)
+        : prod.bestOffer;
+
+      const storeMeta = getStoreMeta(displayOffer.store);
+      const currentPrice = Number(displayOffer.current_price);
+      const originalPrice = Number(displayOffer.original_price || 0);
+      const discount = originalPrice > currentPrice
+        ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100)
+        : 0;
+
+      const otherStoresCount = prod.sortedOffers.length - 1;
+
+      return `
+        <article class="tactile-card bg-white dark:bg-boreal-cardDark rounded-2xl border border-zinc-200/85 dark:border-boreal-borderDark hover:border-zinc-300 dark:hover:border-zinc-700 transition-all duration-200 flex flex-col overflow-hidden group">
+
+          <!-- Container de Imagem -->
+          <div class="p-2.5 pb-0">
+            <a href="#/produto/${prod.slug}" class="relative aspect-square rounded-xl bg-white p-4 flex items-center justify-center overflow-hidden border border-zinc-100 dark:border-zinc-800/60">
+
+              <!-- Pílula da Loja -->
+              <div class="absolute top-2.5 left-2.5 z-10 flex items-center gap-1.5 bg-zinc-950/90 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-[11px] font-semibold shadow-sm">
+                <span class="w-2 h-2 rounded-full" style="background-color: ${storeMeta.dotColor}"></span>
+                <span>${storeMeta.name}</span>
+              </div>
+
+              <!-- Badge de Desconto -->
+              ${discount > 0 ? `
+                <div class="absolute top-2.5 right-2.5 z-10 bg-emerald-500 text-zinc-950 text-[11px] font-display font-extrabold px-2 py-0.5 rounded-lg shadow-sm">
+                  -${discount}%
+                </div>
+              ` : ""}
+
+              <img
+                src="${prod.image_url}"
+                alt="${prod.title}"
+                loading="lazy"
+                onerror="this.src='https://placehold.co/600x600/FFFFFF/18181B?text=Boreal'"
+                class="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+              />
+
+              ${otherStoresCount > 0 ? `
+                <div class="absolute bottom-2.5 right-2.5 bg-zinc-900/85 text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                  +${otherStoresCount} ${otherStoresCount === 1 ? "loja" : "lojas"}
+                </div>
+              ` : ""}
+            </a>
+          </div>
+
+          <!-- Corpo de Informações -->
+          <div class="p-4 flex-1 flex flex-col justify-between space-y-3">
+            <div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[11px] font-semibold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">${prod.categories?.name || "Oferta"}</span>
+                ${displayOffer.coupon_code ? `
+                  <span class="text-[10px] font-mono font-bold bg-boreal-yellow text-zinc-950 px-1.5 py-0.5 rounded">
+                    ${displayOffer.coupon_code}
+                  </span>
+                ` : ""}
+              </div>
+
+              <a href="#/produto/${prod.slug}" class="block mt-1">
+                <h2 class="text-xs sm:text-sm font-semibold text-zinc-800 dark:text-zinc-100 group-hover:text-emerald-600 dark:group-hover:text-boreal-yellow line-clamp-2 leading-snug transition-colors">
+                  ${prod.title}
+                </h2>
+              </a>
+            </div>
+
+            <div class="space-y-3 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+              <div>
+                ${originalPrice > currentPrice ? `
+                  <span class="block text-xs text-zinc-400 dark:text-zinc-500 line-through">${brl.format(originalPrice)}</span>
+                ` : `<span class="block text-xs text-transparent select-none">.</span>`}
+
+                <div class="flex items-baseline gap-1.5">
+                  <span class="font-price font-extrabold text-xl text-zinc-950 dark:text-white">
+                    ${brl.format(currentPrice)}
+                  </span>
+                </div>
+              </div>
+
+              <div class="recessed-track p-1 rounded-xl grid grid-cols-5 gap-1 border border-zinc-300/60 dark:border-zinc-800/90">
+                <a
+                  href="#/produto/${prod.slug}"
+                  class="elevated-pill tactile-btn col-span-3 py-2 px-2.5 rounded-lg bg-white dark:bg-[#191C28] text-zinc-900 dark:text-white text-xs font-display font-bold flex items-center justify-center gap-1 transition-colors"
+                >
+                  <span>Detalhes</span>
+                </a>
+                <a
+                  href="${displayOffer.affiliate_link}"
+                  target="_blank"
+                  rel="nofollow noopener noreferrer"
+                  class="elevated-pill tactile-btn col-span-2 py-2 px-2 rounded-lg bg-boreal-yellow hover:bg-boreal-yellowHover text-zinc-950 text-xs font-display font-extrabold flex items-center justify-center gap-1 transition-colors"
+                  title="Ir para ${storeMeta.name}"
+                >
+                  <span>Loja</span>
+                  <span>↗</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </article>
+      `;
+    }
+
+    /**
+     * 10. PÁGINA DEDICADA DO PRODUTO (#/produto/slug)
+     */
+    function renderProductDetailPage(slug) {
+      const container = document.getElementById("view-product");
+      const prod = state.products.find(p => p.slug === slug);
+
+      if (!prod) {
+        container.innerHTML = `
+          <div class="recessed-panel rounded-2xl p-10 text-center border border-zinc-300/70 dark:border-zinc-800 max-w-lg mx-auto my-8">
+            <h2 class="font-display font-bold text-lg text-zinc-900 dark:text-white">Produto não encontrado</h2>
+            <p class="text-xs text-zinc-500 dark:text-zinc-400 mt-1 mb-5">Esta oferta não está disponível no momento.</p>
+            <a href="#/" class="elevated-pill inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-boreal-yellow text-zinc-950 text-xs font-bold">
+              ← Voltar para a Vitrine
+            </a>
+          </div>
+        `;
+        return;
+      }
+
+      const best = prod.bestOffer;
+      const bestMeta = getStoreMeta(best.store);
+      const currentPrice = Number(best.current_price);
+      const originalPrice = Number(best.original_price || 0);
+
+      const related = state.products
+        .filter(p => p.id !== prod.id && p.categories?.slug === prod.categories?.slug)
+        .slice(0, 4);
+
+      container.innerHTML = `
+        <div class="flex items-center justify-between gap-4 mb-5">
+          <div class="recessed-track p-1 rounded-xl border border-zinc-300/70 dark:border-zinc-800/90 inline-block">
+            <a href="#/" class="elevated-pill tactile-btn inline-flex items-center gap-2 text-xs font-bold text-zinc-800 dark:text-zinc-200 bg-white dark:bg-[#191C28] px-3.5 py-2 rounded-lg">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+              <span>Voltar</span>
+            </a>
+          </div>
+        </div>
+
+        <div class="tactile-card bg-white dark:bg-boreal-cardDark rounded-3xl border border-zinc-200/90 dark:border-boreal-borderDark overflow-hidden p-5 sm:p-8">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+            <!-- Galeria (5 Colunas) -->
+            <div class="lg:col-span-5 flex flex-col items-center">
+              <div class="w-full aspect-square rounded-2xl bg-white p-6 flex items-center justify-center relative border border-zinc-100">
+                ${prod.discountPct > 0 ? `
+                  <span class="absolute top-4 left-4 bg-emerald-500 text-zinc-950 text-xs font-display font-extrabold px-3 py-1 rounded-lg">
+                    -${prod.discountPct}%
+                  </span>
+                ` : ""}
+                <img
+                  src="${prod.image_url}"
+                  alt="${prod.title}"
+                  onerror="this.src='https://placehold.co/600x600/FFFFFF/18181B?text=Boreal'"
+                  class="w-full h-full object-contain max-h-[360px]"
+                />
+              </div>
+
+              ${prod.description ? `
+                <div class="w-full mt-5 recessed-panel rounded-2xl p-4 border border-zinc-300/60 dark:border-zinc-800">
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400 mb-1.5">Sobre o produto</h3>
+                  <p class="text-xs sm:text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">${prod.description}</p>
+                </div>
+              ` : ""}
+            </div>
+
+            <!-- Comparador Multi-Lojas e Conversão (7 Colunas) -->
+            <div class="lg:col-span-7 space-y-6">
+              <div class="space-y-2 border-b border-zinc-100 dark:border-zinc-800 pb-5">
+                <span class="text-xs font-bold px-2.5 py-0.5 rounded-md recessed-panel text-zinc-700 dark:text-zinc-300">
+                  ${prod.categories?.name || "Catálogo"}
+                </span>
+                <h1 class="font-display font-extrabold text-xl sm:text-2xl text-zinc-900 dark:text-white leading-snug pt-1">
+                  ${prod.title}
+                </h1>
+              </div>
+
+              <!-- Destaque do Menor Preço -->
+              <div class="recessed-panel rounded-2xl p-5 border border-zinc-300/70 dark:border-zinc-800 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">
+                    Menor preço disponível:
+                  </span>
+                  <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${bestMeta.badgeClass}">
+                    <span class="w-2 h-2 rounded-full" style="background-color: ${bestMeta.dotColor}"></span>
+                    ${bestMeta.name}
+                  </span>
+                </div>
+
+                <div class="flex flex-wrap items-baseline gap-3">
+                  <span class="font-price font-extrabold text-3xl sm:text-4xl text-zinc-950 dark:text-white">
+                    ${brl.format(currentPrice)}
+                  </span>
+                  ${originalPrice > currentPrice ? `
+                    <span class="text-sm text-zinc-400 line-through">
+                      ${brl.format(originalPrice)}
+                    </span>
+                  ` : ""}
+                </div>
+
+                ${best.coupon_code ? `
+                  <div class="tactile-card bg-white dark:bg-boreal-cardDark rounded-xl p-3.5 border border-dashed border-amber-400 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <span class="block text-xs font-bold text-zinc-900 dark:text-white">
+                        Cupom disponível: <span class="font-mono bg-boreal-yellow text-zinc-950 px-1.5 py-0.5 rounded">${best.coupon_code}</span>
+                      </span>
+                    </div>
+                    <button
+                      onclick="copyToClipboard('${best.coupon_code}')"
+                      class="elevated-pill tactile-btn px-3.5 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold"
+                    >
+                      Copiar Cupom
+                    </button>
+                  </div>
+                ` : ""}
+
+                <a
+                  href="${best.affiliate_link}"
+                  target="_blank"
+                  rel="nofollow noopener noreferrer"
+                  class="elevated-pill tactile-btn w-full py-4 px-6 rounded-xl ${bestMeta.ctaClass} text-sm sm:text-base flex items-center justify-center gap-2 transition-all"
+                >
+                  <span>Ir para ${bestMeta.name} (${brl.format(currentPrice)})</span>
+                  <span>↗</span>
+                </a>
+              </div>
+
+              <!-- Lista Comparativa de Lojas -->
+              <div class="space-y-3">
+                <h3 class="font-display font-bold text-sm text-zinc-900 dark:text-white">
+                  Lojas disponíveis (${prod.sortedOffers.length})
+                </h3>
+
+                <div class="space-y-2.5">
+                  ${prod.sortedOffers.map((offer, idx) => {
+                    const meta = getStoreMeta(offer.store);
+                    const isCheapest = idx === 0;
+                    return `
+                      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-2xl border ${
+                        isCheapest
+                          ? "border-emerald-500/60 bg-emerald-500/5 dark:bg-emerald-500/10"
+                          : "border-zinc-200/80 dark:border-zinc-800 recessed-panel"
+                      }">
+                        <div class="flex items-center gap-3">
+                          <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${meta.dotColor}"></span>
+                          <div class="flex items-center gap-2 flex-wrap">
+                            <span class="font-display font-bold text-sm text-zinc-900 dark:text-white">${meta.name}</span>
+                            ${isCheapest ? `<span class="text-[10px] font-extrabold bg-emerald-500 text-zinc-950 px-2 py-0.5 rounded-full">MENOR PREÇO</span>` : ""}
+                            ${offer.coupon_code ? `<button onclick="copyToClipboard('${offer.coupon_code}')" class="text-[11px] font-mono bg-boreal-yellow text-zinc-950 px-1.5 py-0.5 rounded font-bold">${offer.coupon_code}</button>` : ""}
+                          </div>
+                        </div>
+
+                        <div class="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 pt-2.5 sm:pt-0 border-zinc-200/60 dark:border-zinc-800">
+                          <div class="text-left sm:text-right">
+                            ${offer.original_price > offer.current_price ? `
+                              <span class="block text-[11px] text-zinc-400 line-through">${brl.format(offer.original_price)}</span>
+                            ` : ""}
+                            <span class="font-price font-extrabold text-base text-zinc-900 dark:text-white">${brl.format(offer.current_price)}</span>
+                          </div>
+
+                          <a
+                            href="${offer.affiliate_link}"
+                            target="_blank"
+                            rel="nofollow noopener noreferrer"
+                            class="elevated-pill tactile-btn px-4 py-2 rounded-xl text-xs font-bold border transition-colors ${meta.outlineClass}"
+                          >
+                            Acessar →
+                          </a>
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        ${related.length > 0 ? `
+          <div class="mt-10 space-y-4">
+            <h3 class="font-display font-bold text-base text-zinc-900 dark:text-white">Mais em ${prod.categories?.name}</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              ${related.map(r => `
+                <a href="#/produto/${r.slug}" class="tactile-card bg-white dark:bg-boreal-cardDark p-3.5 rounded-2xl border border-zinc-200/80 dark:border-boreal-borderDark hover:border-boreal-yellow transition-all flex flex-col justify-between">
+                  <div class="aspect-square rounded-xl bg-white p-2 flex items-center justify-center">
+                    <img src="${r.image_url}" alt="${r.title}" class="max-h-28 object-contain" />
+                  </div>
+                  <div class="mt-2.5">
+                    <h4 class="text-xs font-semibold text-zinc-800 dark:text-zinc-200 line-clamp-2">${r.title}</h4>
+                    <span class="block font-price font-extrabold text-sm text-zinc-950 dark:text-white mt-1">${brl.format(r.bestOffer.current_price)}</span>
+                  </div>
+                </a>
+              `).join("")}
+            </div>
+          </div>
+        ` : ""}
+      `;
+    }
+
+    /**
+     * 11. PÁGINA DE CUPONS ATIVOS (#/cupons)
+     */
+    function renderCouponStoreFilters() {
+      const container = document.getElementById("coupon-store-filters");
+      const stores = ["all", "mercadolivre", "shopee", "amazon", "kabum", "pichau"];
+
+      container.innerHTML = stores.map(st => {
+        const active = state.activeCouponStore === st;
+        const label = st === "all" ? "Todas" : getStoreMeta(st).name;
+        return `
+          <button
+            onclick="setCouponStoreFilter('${st}')"
+            class="tactile-btn px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              active
+                ? "elevated-pill bg-white dark:bg-[#191C28] text-zinc-950 dark:text-white"
+                : "text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white"
+            }"
+          >
+            ${label}
+          </button>
+        `;
+      }).join("");
+    }
+
+    function setCouponStoreFilter(st) {
+      state.activeCouponStore = st;
+      renderCouponStoreFilters();
+      renderCouponsPage();
+    }
+
+    function renderCouponsPage() {
+      const grid = document.getElementById("coupons-grid");
+      const filtered = state.coupons.filter(c => {
+        if (state.activeCouponStore === "all") return true;
+        return c.store.toLowerCase() === state.activeCouponStore;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `
+          <div class="col-span-full recessed-panel rounded-2xl p-10 text-center border border-zinc-300/70 dark:border-zinc-800">
+            <p class="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Nenhum cupom cadastrado no momento.</p>
+            <p class="text-xs text-zinc-500 mt-1">Quando novos cupons forem adicionados ao Supabase, eles aparecerão aqui.</p>
+          </div>
+        `;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(c => {
+        const meta = getStoreMeta(c.store);
+        return `
+          <div class="tactile-card bg-white dark:bg-boreal-cardDark rounded-2xl border border-zinc-200/90 dark:border-boreal-borderDark p-5 flex flex-col justify-between gap-4">
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full border ${meta.badgeClass}">
+                  <span class="w-2 h-2 rounded-full" style="background-color: ${meta.dotColor}"></span>
+                  ${meta.name}
+                </span>
+              </div>
+
+              <h3 class="font-display font-extrabold text-base text-zinc-900 dark:text-white">${c.discount_desc}</h3>
+              <p class="text-xs text-zinc-500 dark:text-zinc-400">
+                ${Number(c.min_spend) > 0 ? `Compras acima de ${brl.format(c.min_spend)}` : "Sem valor mínimo"}
+              </p>
+            </div>
+
+            <div class="recessed-track p-1.5 rounded-xl border border-zinc-300/70 dark:border-zinc-800 flex items-center justify-between gap-2">
+              <div class="px-3 py-1.5 font-mono font-bold text-sm text-zinc-900 dark:text-boreal-yellow tracking-wider">
+                ${c.code}
+              </div>
+
+              <button
+                onclick="copyCouponAndOpen('${c.code}', '${c.affiliate_link}')"
+                class="elevated-pill tactile-btn px-3.5 py-2 rounded-lg bg-boreal-yellow hover:bg-boreal-yellowHover text-zinc-950 text-xs font-display font-extrabold transition-colors"
+              >
+                Copiar & Abrir ↗
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    /**
+     * 12. ROTEAMENTO SPA E CONTROLE DE PROFUNDIDADE DO SELETOR
+     */
+    function handleRoute() {
+      const hash = window.location.hash || "#/";
+      const viewHome = document.getElementById("view-home");
+      const viewProduct = document.getElementById("view-product");
+      const viewCoupons = document.getElementById("view-coupons");
+
+      const tabVitrine = document.getElementById("switch-tab-vitrine");
+      const tabCupons = document.getElementById("switch-tab-cupons");
+
+      viewHome.classList.add("hidden");
+      viewProduct.classList.add("hidden");
+      viewCoupons.classList.add("hidden");
+
+      const activeTabClasses = "elevated-pill px-4 py-2 rounded-xl text-xs font-display font-bold transition-all duration-200 flex items-center justify-center gap-2 bg-white dark:bg-[#191C28] text-zinc-950 dark:text-white border border-zinc-200/90 dark:border-zinc-700/80";
+      const inactiveTabClasses = "px-4 py-2 rounded-xl text-xs font-display font-bold transition-all duration-200 flex items-center justify-center gap-2 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 border border-transparent";
+
+      if (hash.startsWith("#/produto/")) {
+        const slug = decodeURIComponent(hash.replace("#/produto/", ""));
+        viewProduct.classList.remove("hidden");
+        tabVitrine.className = activeTabClasses;
+        tabCupons.className = inactiveTabClasses;
+        renderProductDetailPage(slug);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else if (hash.startsWith("#/cupons")) {
+        viewCoupons.classList.remove("hidden");
+        tabCupons.className = activeTabClasses;
+        tabVitrine.className = inactiveTabClasses;
+        renderCouponsPage();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        viewHome.classList.remove("hidden");
+        tabVitrine.className = activeTabClasses;
+        tabCupons.className = inactiveTabClasses;
+        renderProductsGrid();
+      }
+    }
+
+    /**
+     * 13. RESET DE FILTROS E TOAST
+     */
+    function resetAllFilters() {
+      state.activeStore = "all";
+      state.activeCategory = "all";
+      state.priceRange = "all";
+      state.onlyWithCoupon = false;
+      state.onlySuperDeal = false;
+      state.searchQuery = "";
+
+      document.getElementById("search-input").value = "";
+      document.getElementById("clear-search-btn").classList.add("hidden");
+      document.getElementById("price-range-select").value = "all";
+
+      document.getElementById("filter-only-coupon-btn").className =
+        "tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-800";
+      document.getElementById("filter-super-deal-btn").className =
+        "tactile-btn px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 bg-white dark:bg-[#151824] text-zinc-700 dark:text-zinc-300 border-zinc-300/80 dark:border-zinc-800";
+
+      renderStoreFilters();
+      renderCategoryFilters();
+      renderProductsGrid();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toast-message").textContent = msg;
+      toast.classList.remove("hidden");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 3000);
+    }
+
+    /**
+     * 14. INICIALIZAÇÃO DE EVENTOS
+     */
+    window.addEventListener("DOMContentLoaded", () => {
+      const searchInput = document.getElementById("search-input");
+      const clearBtn = document.getElementById("clear-search-btn");
+
+      searchInput.addEventListener("input", (e) => {
+        state.searchQuery = e.target.value;
+        clearBtn.classList.toggle("hidden", state.searchQuery.trim() === "");
+        if (window.location.hash !== "#/") {
+          window.location.hash = "#/";
+        } else {
+          renderProductsGrid();
+        }
+      });
+
+      clearBtn.addEventListener("click", () => {
+        searchInput.value = "";
+        state.searchQuery = "";
+        clearBtn.classList.add("hidden");
+        renderProductsGrid();
+      });
+
+      document.getElementById("price-range-select").addEventListener("change", (e) => {
+        state.priceRange = e.target.value;
+        renderProductsGrid();
+      });
+
+      document.getElementById("sort-select").addEventListener("change", (e) => {
+        state.sortBy = e.target.value;
+        renderProductsGrid();
+      });
+
+      window.addEventListener("hashchange", handleRoute);
+
+      loadDatabase();
+    });
+  </script>
+</body>
+</html>
